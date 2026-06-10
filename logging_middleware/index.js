@@ -1,53 +1,50 @@
-// logging_middleware/index.js
-const axios = require('axios');
+import axios from 'axios';
 
-// Strict allowed enums from documentation
 const ALLOWED_STACKS = ['backend', 'frontend'];
 const ALLOWED_LEVELS = ['debug', 'info', 'warn', 'error', 'fatal'];
-
 const ALLOWED_PACKAGES = [
-    'cache', 'controller', 'cron_job', 'db', 'domain', 'handler', 'repository', 'route', 'service', // Backend
-    'api', 'component', 'hook', 'page', 'state', 'style',                                          // Frontend
-    'auth', 'config', 'middleware', 'utils'                                                         // Shared
+    // Backend only
+    'cache', 'controller', 'cron_job', 'db', 'domain', 'handler', 'repository', 'route', 'service',
+    // Frontend only
+    'api', 'component', 'hook', 'page', 'state', 'style',
+    // Shared
+    'auth', 'config', 'middleware', 'utils'
 ];
 
 /**
- * Reusable Log function to send application tracking events to Affordmed's test server.
- * @param {string} stack - 'backend' or 'frontend'
- * @param {string} level - 'debug', 'info', 'warn', 'error', 'fatal'
- * @param {string} pkg - The package/layer string (e.g., 'db', 'handler')
- * @param {string} message - Descriptive context string
- * @param {string} token - Your active Bearer access token
+ * Sends a log entry to the Affordmed evaluation server.
+ * @param {string} stack   - 'backend' | 'frontend'
+ * @param {string} level   - 'debug' | 'info' | 'warn' | 'error' | 'fatal'
+ * @param {string} pkg     
+ * @param {string} message 
+ * @param {string} token   
  */
-async function Log(stack, level, pkg, message, token) {
-    // Ensure strict lowercase compliance
-    const clearStack = stack?.toLowerCase();
-    const clearLevel = level?.toLowerCase();
-    const clearPkg = pkg?.toLowerCase();
+export async function Log(stack, level, pkg, message, token) {
+    const s = stack?.toLowerCase();
+    const l = level?.toLowerCase();
+    const p = pkg?.toLowerCase();
 
-    // Local validation checks
-    if (!ALLOWED_STACKS.includes(clearStack)) {
-        console.error(`[Local Log Error] Invalid stack: ${stack}`);
+    if (!ALLOWED_STACKS.includes(s)) {
+        console.error(`[Log] Invalid stack: "${stack}". Allowed: ${ALLOWED_STACKS.join(', ')}`);
         return;
     }
-    if (!ALLOWED_LEVELS.includes(clearLevel)) {
-        console.error(`[Local Log Error] Invalid level: ${level}`);
+    if (!ALLOWED_LEVELS.includes(l)) {
+        console.error(`[Log] Invalid level: "${level}". Allowed: ${ALLOWED_LEVELS.join(', ')}`);
         return;
     }
-    if (!ALLOWED_PACKAGES.includes(clearPkg)) {
-        console.error(`[Local Log Error] Invalid package: ${pkg}`);
+    if (!ALLOWED_PACKAGES.includes(p)) {
+        console.error(`[Log] Invalid package: "${pkg}". Allowed: ${ALLOWED_PACKAGES.join(', ')}`);
+        return;
+    }
+    if (!token) {
+        console.error('[Log] No token provided.');
         return;
     }
 
     try {
         const response = await axios.post(
             'http://4.224.186.213/evaluation-service/logs',
-            {
-                stack: clearStack,
-                level: clearLevel,
-                package: clearPkg,
-                message: message
-            },
+            { stack: s, level: l, package: p, message },
             {
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -55,12 +52,9 @@ async function Log(stack, level, pkg, message, token) {
                 }
             }
         );
-
-        console.log(`[Remote Log Success] Log ID: ${response.data.logID}`);
+        console.log(`[Log OK] logID: ${response.data.logID}`);
         return response.data;
-    } catch (error) {
-        console.error('[Remote Log Failure]:', error.response?.data || error.message);
+    } catch (err) {
+        console.error('[Log FAILED]:', err.response?.data || err.message);
     }
 }
-
-module.exports = { Log };
