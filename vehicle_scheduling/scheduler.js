@@ -2,14 +2,14 @@ import axios from 'axios';
 import { Log } from '../logging_middleware/index.js';
 import 'dotenv/config';
 
-const TOKEN = process.env.ACCESS_TOKEN;
+const TOKEN = process.env.ACCESS_TOKEN?.trim();
 const BASE_URL = 'http://4.224.186.213/evaluation-service';
 
 const headers = {
     Authorization: `Bearer ${TOKEN}`,
     'Content-Type': 'application/json'
 };
-console.log("TOKEN:", TOKEN);
+// console.log("TOKEN:", TOKEN);
 
 function knapsack(capacity, tasks) {
     const n = tasks.length;
